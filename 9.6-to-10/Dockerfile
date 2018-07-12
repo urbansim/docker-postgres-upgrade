@@ -1,8 +1,5 @@
 FROM postgres:10
 
-ENV POSTGIS_MAJOR 2.4
-ENV POSTGIS_VERSION 2.4.4+dfsg-4.pgdg90+1
-
 RUN sed -i 's/$/ 9.6/' /etc/apt/sources.list.d/pgdg.list
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -10,17 +7,27 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 		postgresql-contrib-9.6=9.6.9-2.pgdg90+1 \
 	&& rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update \
-      && apt-cache showpkg postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR \
-      && apt-get install -y --no-install-recommends \
-           postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR=$POSTGIS_VERSION \
-           postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR-scripts=$POSTGIS_VERSION \
-           postgis=$POSTGIS_VERSION \
-      && rm -rf /var/lib/apt/lists/*
+RUN  apt-get update \
+  && apt-get install -y --no-install-recommends \
+        wget \
+  && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /docker-entrypoint-initdb.d
-COPY ./initdb-postgis.sh /docker-entrypoint-initdb.d/postgis.sh
-COPY ./update-postgis.sh /usr/local/bin
+RUN sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt xenial-pgdg main" >> /etc/apt/sources.list'
+RUN wget --quiet -O - http://apt.postgresql.org/pub/repos/apt/ACCC4CF8.asc | apt-key add -
+RUN apt update
+
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        postgresql-10-postgis-2.4\
+        postgresql-10-postgis-scripts\
+        postgresql-10-pgrouting	\
+    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        postgresql-9.6-postgis-2.4\
+        postgresql-9.6-postgis-scripts\
+        postgresql-9.6-pgrouting	\
+    && rm -rf /var/lib/apt/lists/*
 
 ENV PGBINOLD /usr/lib/postgresql/9.6/bin
 ENV PGBINNEW /usr/lib/postgresql/10/bin
